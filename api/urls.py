@@ -3,7 +3,7 @@ from rest_framework.authtoken.views import obtain_auth_token
 from api import api_views
 
 urlpatterns = [
-    path('token-auth/', obtain_auth_token, name='api_token_auth'),
+    path('token-auth', obtain_auth_token, name='api_token_auth'),
     path('venues', api_views.VenueList.as_view(), name='venue_list'),
     path('venues/<str:pk>', api_views.VenueDetail.as_view(), name='venue_detail'),
     path('hku-members', api_views.HkuMemberList.as_view(), name='hku_member_list'),
