@@ -5,10 +5,11 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from .models import *
 from .serializers import *
+import datetime
 
 
 class VenueList(APIView):
-    permission_classes = (IsAuthenticated,)
+    #permission_classes = (IsAuthenticated,)
 
     def get(self, request, format=None):
         venues = Venue.objects.all()
@@ -24,7 +25,7 @@ class VenueList(APIView):
 
 
 class VenueDetail(APIView):
-    permission_classes = (IsAuthenticated,)
+    #permission_classes = (IsAuthenticated,)
 
     def get(self, request, pk, format=None):
         try:
@@ -55,7 +56,7 @@ class VenueDetail(APIView):
 
 
 class HkuMemberList(APIView):
-    permission_classes = (IsAuthenticated,)
+    #permission_classes = (IsAuthenticated,)
 
     def get(self, request, format=None):
         hku_members = HkuMember.objects.all()
@@ -71,7 +72,7 @@ class HkuMemberList(APIView):
 
 
 class HkuMemberDetail(APIView):
-    permission_classes = (IsAuthenticated,)
+    #permission_classes = (IsAuthenticated,)
 
     def get(self, request, pk, format=None):
         try:
@@ -102,7 +103,7 @@ class HkuMemberDetail(APIView):
 
 
 class VisitList(APIView):
-    permission_classes = (IsAuthenticated,)
+    #permission_classes = (IsAuthenticated,)
 
     def get(self, request, format=None):
         visits = Visit.objects.all()
@@ -118,7 +119,7 @@ class VisitList(APIView):
 
 
 class VisitDetail(APIView):
-    permission_classes = (IsAuthenticated,)
+    #permission_classes = (IsAuthenticated,)
 
     def get(self, request, pk, format=None):
         try:
@@ -127,3 +128,38 @@ class VisitDetail(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = VisitSerializer(visit)
         return Response(serializer.data)
+
+
+class VisitBy(APIView):
+    #permission_classes = (IsAuthenticated,)
+
+    def get(self, request, hku_id, date, format=None):
+        infectious_date = datetime.datetime.strptime(date, "%d-%m-%Y")
+        try:
+            visits = Visit.objects.filter(
+                hku_member__hku_id=hku_id,
+                time__date__gte=datetime.date(infectious_date.year, infectious_date.month, infectious_date.day)
+            )
+        except Visit.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = VisitSerializer(visits, many=True)
+        return Response(serializer.data)
+
+class CloseContact(APIView):
+    #permission_classes = (IsAuthenticated,)
+
+    def get(self, request, hku_id, date, format=None):
+        infectious_date = datetime.datetime.strptime(date, "%d-%m-%Y")+datetime.timedelta(days=2)
+        try:
+            infectious_visits = Visit.objects.filter(
+                hku_member__hku_id=hku_id,
+                time__date__gte=datetime.date(infectious_date.year, infectious_date.month, infectious_date.day)
+            )
+        except Visit.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        infectious_students = []
+
+        i = 0
+        start_time = 0
+        end_time = 0
