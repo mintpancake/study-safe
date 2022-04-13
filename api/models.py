@@ -26,14 +26,20 @@ class HkuMember(models.Model):
 
 
 class Visit(models.Model):
-    ACTIONS = (
-        ('I', 'Entry'),
-        ('O', 'Exit'),
+    STATUS = (
+        ('S', 'Stay'),
+        ('L', 'Leave'),
     )
-    time = models.DateTimeField()
-    action = models.CharField(max_length=1, choices=ACTIONS)
+    enter_time = models.DateTimeField()
+    exit_time = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=1, choices=STATUS)
     hku_member = models.ForeignKey(HkuMember, on_delete=models.CASCADE)
     venue = models.ForeignKey(Venue, on_delete=models.CASCADE)
 
+    def save(self, *args, **kwargs):
+        if not self.exit_time:
+            self.exit_time = None
+        super(Visit, self).save(*args, **kwargs)
+
     def __str__(self):
-        return f'{self.time} {self.action} {self.hku_member.hku_id} {self.venue.code}'
+        return f'{self.enter_time} {self.exit_time} {self.status} {self.hku_member.hku_id} {self.venue.code}'
