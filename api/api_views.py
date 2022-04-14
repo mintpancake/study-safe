@@ -193,15 +193,18 @@ class VisitBy(APIView):
     def get(self, request, hku_id, date, format=None):
         try:
             infectious_date = datetime.datetime.strptime(date, "%d-%m-%Y")
+            start_date = infectious_date+datetime.timedelta(days=-2)
         except ValueError:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         try:
             visits = Visit.objects.filter(
                 hku_member__hku_id=hku_id,
-                enter_time__date__gte=datetime.date(infectious_date.year, infectious_date.month, infectious_date.day)
+                enter_time__date__gte=datetime.date(start_date.year, start_date.month, start_date.day),
+                enter_time__date__lte=datetime.date(infectious_date.year, infectious_date.month, infectious_date.day)
             ) | Visit.objects.filter(
                 hku_member__hku_id=hku_id,
-                exit_time__date__gte=datetime.date(infectious_date.year, infectious_date.month, infectious_date.day)
+                exit_time__date__gte=datetime.date(start_date.year, start_date.month, start_date.day),
+                exit_time__date__lte=datetime.date(infectious_date.year, infectious_date.month, infectious_date.day)
             ) | Visit.objects.filter(
                 hku_member__hku_id=hku_id,
                 exit_time__date__isnull=True
@@ -218,21 +221,25 @@ class CloseContact(APIView):
     # permission_classes = (IsAuthenticated,)
 
     def get(self, request, hku_id, date, format=None):
-        infectious_date = datetime.datetime.strptime(date, "%d-%m-%Y") + datetime.timedelta(days=-2)
+        try:
+            infectious_date = datetime.datetime.strptime(date, "%d-%m-%Y")
+            start_date = infectious_date+datetime.timedelta(days=-2)
+        except ValueError:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         try:
             infectious_visits = Visit.objects.filter(
                 hku_member__hku_id=hku_id,
-                enter_time__date__gte=datetime.date(infectious_date.year, infectious_date.month, infectious_date.day)
+                enter_time__date__gte=datetime.date(start_date.year, start_date.month, start_date.day),
+                enter_time__date__lte=datetime.date(infectious_date.year, infectious_date.month, infectious_date.day)
             ) | Visit.objects.filter(
                 hku_member__hku_id=hku_id,
-                exit_time__date__gte=datetime.date(infectious_date.year, infectious_date.month, infectious_date.day)
+                exit_time__date__gte=datetime.date(start_date.year, start_date.month, start_date.day),
+                exit_time__date__lte=datetime.date(infectious_date.year, infectious_date.month, infectious_date.day)
             ) | Visit.objects.filter(
                 hku_member__hku_id=hku_id,
                 exit_time__date__isnull=True
             )
         except Visit.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-        if len(infectious_visits) == 0:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         close_contacts = []
