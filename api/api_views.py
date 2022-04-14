@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from .models import *
 from .serializers import *
+from django.core.exceptions import ValidationError
 from django.db.models import DurationField, F, ExpressionWrapper, Q
 import datetime
 
@@ -182,8 +183,11 @@ class VisitDetail(APIView):
         }
         serializer = VisitSerializer(visit, data=data)
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
+            try:
+                serializer.save()
+                return Response(serializer.data)
+            except ValidationError:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -193,7 +197,7 @@ class VisitBy(APIView):
     def get(self, request, hku_id, date, format=None):
         try:
             infectious_date = datetime.datetime.strptime(date, "%d-%m-%Y")
-            start_date = infectious_date+datetime.timedelta(days=-2)
+            start_date = infectious_date + datetime.timedelta(days=-2)
         except ValueError:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         try:
@@ -211,8 +215,6 @@ class VisitBy(APIView):
             )
         except Visit.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
-        if len(visits) == 0:
-            return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = VisitSerializer(visits, many=True)
         return Response(serializer.data)
 
@@ -223,7 +225,7 @@ class CloseContact(APIView):
     def get(self, request, hku_id, date, format=None):
         try:
             infectious_date = datetime.datetime.strptime(date, "%d-%m-%Y")
-            start_date = infectious_date+datetime.timedelta(days=-2)
+            start_date = infectious_date + datetime.timedelta(days=-2)
         except ValueError:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         try:

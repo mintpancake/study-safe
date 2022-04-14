@@ -11,7 +11,7 @@ class VenueSerializer(serializers.ModelSerializer):
 class HkuMemberSerializer(serializers.ModelSerializer):
     class Meta:
         model = HkuMember
-        fields = '__all__'
+        exclude = ['venues']
 
 
 class VisitSerializer(serializers.ModelSerializer):

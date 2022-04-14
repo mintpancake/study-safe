@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 
 
 class Venue(models.Model):
@@ -34,6 +35,8 @@ class Visit(models.Model):
     def save(self, *args, **kwargs):
         if not self.exit_time:
             self.exit_time = None
+        elif self.exit_time < self.enter_time:
+            raise ValidationError("Exit time must be later than enter time!")
         super(Visit, self).save(*args, **kwargs)
 
     def __str__(self):
