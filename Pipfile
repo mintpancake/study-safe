@@ -8,6 +8,7 @@ django = "~=4.0"
 djangorestframework = "*"
 gunicorn = "*"
 environs = {extras = ["django"], version = "*"}
+whitenoise = "*"
 
 [dev-packages]
 
