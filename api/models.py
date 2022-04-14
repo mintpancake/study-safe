@@ -26,13 +26,8 @@ class HkuMember(models.Model):
 
 
 class Visit(models.Model):
-    STATUS = (
-        ('S', 'Stay'),
-        ('L', 'Leave'),
-    )
     enter_time = models.DateTimeField()
     exit_time = models.DateTimeField(null=True, blank=True)
-    status = models.CharField(max_length=1, choices=STATUS)
     hku_member = models.ForeignKey(HkuMember, on_delete=models.CASCADE)
     venue = models.ForeignKey(Venue, on_delete=models.CASCADE)
 
@@ -42,4 +37,4 @@ class Visit(models.Model):
         super(Visit, self).save(*args, **kwargs)
 
     def __str__(self):
-        return f'{self.enter_time} {self.exit_time} {self.status} {self.hku_member.hku_id} {self.venue.code}'
+        return f'{self.enter_time} {self.exit_time} {self.hku_member.hku_id} {self.venue.code}'

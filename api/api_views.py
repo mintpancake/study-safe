@@ -1,5 +1,3 @@
-from django.db.models import ExpressionWrapper, F
-from django.http import Http404
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -43,6 +41,23 @@ class VenueDetail(APIView):
         except Venue.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = VenueSerializer(venue, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request, pk, format=None):
+        try:
+            venue = Venue.objects.get(pk=pk)
+        except Venue.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        data = {
+            "code": venue.code,
+            "location": request.data.get("location", venue.location),
+            "type": request.data.get("type", venue.type),
+            "capacity": request.data.get("capacity", venue.capacity),
+        }
+        serializer = VenueSerializer(venue, data=data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -95,6 +110,21 @@ class HkuMemberDetail(APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def patch(self, request, pk, format=None):
+        try:
+            hku_member = HkuMember.objects.get(pk=pk)
+        except HkuMember.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        data = {
+            "hku_id": hku_member.hku_id,
+            "name": request.data.get("name", hku_member.name),
+        }
+        serializer = HkuMemberSerializer(hku_member, data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     def delete(self, request, pk, format=None):
         try:
             hku_member = HkuMember.objects.get(pk=pk)
@@ -113,7 +143,13 @@ class VisitList(APIView):
         return Response(serializer.data)
 
     def post(self, request, format=None):
-        serializer = VisitSerializer(data=request.data)
+        data = {
+            "enter_time": request.data.get("enter_time"),
+            "exit_time": None,
+            "hku_member": request.data.get("hku_member"),
+            "venue": request.data.get("venue")
+        }
+        serializer = VisitSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -131,12 +167,34 @@ class VisitDetail(APIView):
         serializer = VisitSerializer(visit)
         return Response(serializer.data)
 
+    def patch(self, request, pk, format=None):
+        try:
+            visit = Visit.objects.get(pk=pk)
+        except Visit.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        if visit.exit_time:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        data = {
+            "enter_time": visit.enter_time,
+            "exit_time": request.data.get("exit_time", visit.exit_time),
+            "hku_member": visit.hku_member.hku_id,
+            "venue": visit.venue.code,
+        }
+        serializer = VisitSerializer(visit, data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class VisitBy(APIView):
     # permission_classes = (IsAuthenticated,)
 
     def get(self, request, hku_id, date, format=None):
-        infectious_date = datetime.datetime.strptime(date, "%d-%m-%Y")
+        try:
+            infectious_date = datetime.datetime.strptime(date, "%d-%m-%Y")
+        except ValueError:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         try:
             visits = Visit.objects.filter(
                 hku_member__hku_id=hku_id,
@@ -149,6 +207,8 @@ class VisitBy(APIView):
                 exit_time__date__isnull=True
             )
         except Visit.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        if len(visits) == 0:
             return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = VisitSerializer(visits, many=True)
         return Response(serializer.data)
@@ -172,6 +232,8 @@ class CloseContact(APIView):
             )
         except Visit.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
+        if len(infectious_visits) == 0:
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
         close_contacts = []
 
@@ -185,11 +247,11 @@ class CloseContact(APIView):
             suspicious_visits = Visit.objects.filter(
                 ~Q(hku_member__hku_id=hku_id),
                 venue__code=venue_i,
-                enter_time__lte=exit_time_i+datetime.timedelta(minutes=-30),
+                enter_time__lte=exit_time_i + datetime.timedelta(minutes=-30),
                 exit_time__gte=enter_time_i + datetime.timedelta(minutes=30),
             ) & Visit.objects.annotate(diff=ExpressionWrapper(
                 F('exit_time') - F('enter_time'), output_field=DurationField()
-                )).filter(venue__code=venue_i, diff__gte=datetime.timedelta(minutes=30))
+            )).filter(venue__code=venue_i, diff__gte=datetime.timedelta(minutes=30))
 
             close_contacts.extend(suspicious_visits)
 
