@@ -9,6 +9,8 @@ djangorestframework = "*"
 gunicorn = "*"
 environs = {extras = ["django"], version = "*"}
 whitenoise = "*"
+pyyaml = "*"
+uritemplate = "*"
 
 [dev-packages]
 
