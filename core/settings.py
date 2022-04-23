@@ -13,6 +13,10 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 from pathlib import Path
 import os.path
 import sys
+from environs import Env
+
+env = Env()
+env.read_env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -30,10 +34,12 @@ STATICFILES_DIRS = (
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-l(h$7w=+@6o&yo7n+2103n2*(n2pavhnf1i@b$321jj!7()ur4'
+# SECRET_KEY = 'django-insecure-l(h$7w=+@6o&yo7n+2103n2*(n2pavhnf1i@b$321jj!7()ur4'
+SECRET_KEY = env.str('QDD_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG = True
+DEBUG = env.bool('QDD_DEBUG', default=False)
 
 ALLOWED_HOSTS = ['blooming-beach-58892.herokuapp.com', 'localhost', '127.0.0.1']
 
@@ -96,11 +102,9 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': env.dj_db_url('DATABASE_URL')
 }
 
 # Password validation

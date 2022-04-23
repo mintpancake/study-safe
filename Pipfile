@@ -11,6 +11,7 @@ environs = {extras = ["django"], version = "*"}
 whitenoise = "*"
 pyyaml = "*"
 uritemplate = "*"
+psycopg2-binary = "*"
 
 [dev-packages]
 
